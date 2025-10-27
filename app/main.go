@@ -30,11 +30,11 @@ func main() {
 			os.Exit(1)
 		}
 		go server(connection, c)
-		result := <-c
-		if result.isError {
-			os.Exit(1)
-		}
-		os.Exit(0)
+		// result := <-c
+		// if result.isError {
+		// 	os.Exit(1)
+		// }
+		// os.Exit(0)
 	}
 
 	// if cleanCommand == "PING" {
