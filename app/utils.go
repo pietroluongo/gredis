@@ -2,8 +2,9 @@ package main
 
 import (
 	"bytes"
+	"strings"
 )
 
 func cleanupCommand(command []byte) string {
-	return string(bytes.Trim(command, "\r\n\x00"))
+	return strings.ToLower(string(bytes.Trim(command, "\r\n\x00")))
 }
