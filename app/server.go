@@ -33,6 +33,8 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 
 		if handler == nil {
 			fmt.Printf("Failed to match handler with cmd \"%s\" (%v)\n", safeCmd, []byte(safeCmd))
+			connection.Write([]byte("+PONG\r\n"))
+			parentChannel <- TCPStatus{isError: false}
 			continue
 		}
 		handler(connection)
