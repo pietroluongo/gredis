@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"slices"
+	"strings"
 
 	domain "github.com/codecrafters-io/redis-starter-go/internal/domain"
 	"github.com/codecrafters-io/redis-starter-go/internal/resp"
@@ -27,7 +28,7 @@ func dispatch(message resp.RespMessage, c net.Conn) {
 	}
 	log.Info("is not array")
 
-	if message.Kind == resp.SimpleString && isOperation(message.Content.(string)) {
+	if message.Kind == resp.SimpleString && isOperation(strings.ToLower(message.Content.(string))) {
 		log.Info("is simple op")
 		dispatchSimpleOperation(message, c)
 		return
@@ -38,12 +39,12 @@ func dispatch(message resp.RespMessage, c net.Conn) {
 func checkIfArrayIsCommand(r resp.ArrayRespMessage) bool {
 	possibleCommandItem := r.Content[0]
 	log.Info(fmt.Sprintf("possible command item is %v", possibleCommandItem))
-	return slices.Contains([]RedisCommands{ping, echo}, RedisCommands(possibleCommandItem.Content.(string)))
+	return slices.Contains([]RedisCommands{ping, echo}, RedisCommands(strings.ToLower(possibleCommandItem.Content.(string))))
 }
 
 func dispatchCommandWithArray(r resp.ArrayRespMessage, c net.Conn) {
 	commandRequest := r.Content[0]
-	domainOperation := domain.ValidHandlers(commandRequest.Content.(string))
+	domainOperation := domain.ValidHandlers(strings.ToLower(commandRequest.Content.(string)))
 	domainHandler := domain.DomainHandlers[domainOperation]
 
 	if domainHandler == nil {
@@ -61,7 +62,7 @@ func isOperation(s string) bool {
 }
 
 func dispatchSimpleOperation(m resp.RespMessage, c net.Conn) {
-	domainOperation := domain.ValidHandlers(m.Content.(string))
+	domainOperation := domain.ValidHandlers(strings.ToLower(m.Content.(string)))
 	domainHandler := domain.DomainHandlers[domainOperation]
 	if domainHandler == nil {
 		log.Error(fmt.Sprintf("Failed to match handler for operation %s", domainOperation))
