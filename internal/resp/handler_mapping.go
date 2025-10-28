@@ -8,13 +8,19 @@ const (
 	BulkString   ValidHeaders = '$'
 )
 
-var parseBuilders = map[ValidHeaders]func(data []byte) *RespMessage{
-	SimpleString: simpleStringBuilder,
-	Array:        arrayBuilder,
-	BulkString:   todoBuilder,
+type ParserType func(data []byte) (*RespMessage, int, error)
+
+var parseBuilders map[ValidHeaders]ParserType
+
+func init() {
+	parseBuilders = map[ValidHeaders]ParserType{
+		SimpleString: simpleStringBuilder,
+		Array:        arrayBuilder,
+		BulkString:   bulkStringBuilder,
+	}
 }
 
-func todoBuilder(data []byte) *RespMessage {
-	log.Info("TODO HANDLER NOT IMPLEMENTED")
-	return &RespMessage{Kind: SimpleString, Content: "OK"}
-}
+// func todoBuilder(data []byte) (*RespMessage, error) {
+// 	log.Info("TODO HANDLER NOT IMPLEMENTED")
+// 	return &RespMessage{Kind: SimpleString, Content: "OK"}, nil
+// }

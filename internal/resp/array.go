@@ -2,40 +2,33 @@ package resp
 
 import (
 	"fmt"
-	"strconv"
-	"strings"
-	"unicode"
 )
 
-func arrayBuilder(data []byte) []RespMessage {
+type ArrayRespMessage struct {
+	Kind    ValidHeaders
+	Content []RespMessage
+}
+
+func arrayBuilder(data []byte) (*RespMessage, int, error) {
 	sz, offset, err := extractArraySize(data)
+	log.Info("Parsing array")
 	if err != nil {
 		log.Error("Failed to extract array size")
-		return []RespMessage{}
+		return nil, 0, err
 	}
+
+	log.Info(fmt.Sprintf("array size is %d", sz))
 
 	result := make([]RespMessage, sz)
 
-	for i := 0; i < sz; i++ {
-		data, err := internalParse(data[offset:])
+	for i := range sz {
+		data, delta, err := internalParse(data[offset:])
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to extract data %d - %s", i, err))
-			continue
+			break
 		}
 		result[i] = *data
+		offset += delta
 	}
-	return result
-}
-
-func extractArraySize(data []byte) (int, int, error) {
-	// we're dealing with array - max size is 2^32 = 10 chars in dec
-	arrSize := make([]byte, 10)
-	i := 0
-	for i < len(data) && unicode.IsNumber(rune(data[i])) {
-		arrSize[i] = data[i]
-		i += 1
-	}
-	convertedArrSize := strings.Trim(string(arrSize), "\x00")
-	sz, err := strconv.Atoi(string(convertedArrSize))
-	return sz, i, err
+	return &RespMessage{Kind: Array, Content: result}, 0, nil
 }

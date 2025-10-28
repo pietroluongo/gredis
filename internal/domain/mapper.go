@@ -6,10 +6,15 @@ type ValidHandlers string
 
 const (
 	Ping ValidHandlers = "ping"
-	Pong ValidHandlers = "pong"
 	Echo ValidHandlers = "echo"
 )
 
-var DomainHandlers = map[ValidHandlers]func(net.Conn){
+type Params struct {
+	C    net.Conn
+	Data any
+}
+
+var DomainHandlers = map[ValidHandlers]func(Params){
 	Ping: PingHandler,
+	Echo: EchoHandler,
 }

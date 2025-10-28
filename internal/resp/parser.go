@@ -8,14 +8,7 @@ type RespMessage struct {
 }
 
 func ParseMessage(rawData []byte) RespMessage {
-	trimmedMessage := cleanInput(rawData)
-
-	if len(trimmedMessage) == 0 {
-		log.Warn("message length is 0")
-		return RespMessage{Kind: SimpleString, Content: "OK"}
-	}
-
-	stuff, err := internalParse(trimmedMessage)
+	stuff, _, err := internalParse(rawData)
 
 	if err != nil {
 		log.Error(fmt.Sprintf("Failed to parse message - %s", err.Error()))
@@ -25,13 +18,18 @@ func ParseMessage(rawData []byte) RespMessage {
 	return *stuff
 }
 
-func internalParse(data []byte) (*RespMessage, error) {
-	headerChar := data[0]
+func internalParse(rawData []byte) (*RespMessage, int, error) {
+	trimmedMessage := cleanInput(rawData)
+
+	if len(trimmedMessage) == 0 {
+		log.Warn("message length is 0")
+		return nil, 0, fmt.Errorf("message length is 0")
+	}
+
+	headerChar := trimmedMessage[0]
 	builderFunction := parseBuilders[ValidHeaders(headerChar)]
 	if builderFunction == nil {
-		log.Error(fmt.Sprintf("Failed to match header %s", string(headerChar)))
-		return nil, fmt.Errorf("failed to parse")
+		return nil, 0, fmt.Errorf("failed to match header %s on message %s trimmed to %s", string(headerChar), string(rawData), string(trimmedMessage))
 	}
-	stuff := parseBuilders[ValidHeaders(headerChar)](data[1:])
-	return stuff, nil
+	return parseBuilders[ValidHeaders(headerChar)](trimmedMessage[1:])
 }
