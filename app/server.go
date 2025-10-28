@@ -6,23 +6,17 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"slices"
+
+	domain "github.com/codecrafters-io/redis-starter-go/internal/domain"
+	resp "github.com/codecrafters-io/redis-starter-go/internal/resp"
+	respOutput "github.com/codecrafters-io/redis-starter-go/internal/resp/output"
 )
 
-type ValidHandlers string
+var log *slog.Logger
 
-const (
-	Ping ValidHandlers = "ping"
-	Pong ValidHandlers = "pong"
-	Echo ValidHandlers = "echo"
-)
-
-var handlers = map[ValidHandlers]func(net.Conn){
-	Ping: handlePing,
-	Pong: handlePing,
-}
-
-func server(connection net.Conn, parentChannel chan TCPStatus) {
-	file, err := os.OpenFile("./log.txt", os.O_WRONLY|os.O_CREATE, 0644)
+func initLog() {
+	file, err := os.OpenFile("./log.txt", os.O_RDWR|os.O_CREATE, 0644)
 
 	var logOutput io.Writer
 
@@ -32,11 +26,15 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 	} else {
 		logOutput = io.MultiWriter(os.Stdout, file)
 	}
+	log = slog.New(slog.NewTextHandler(logOutput, &slog.HandlerOptions{AddSource: false})).With(slog.Group("context", "package", "server"))
+}
 
-	log := slog.New(slog.NewTextHandler(logOutput, &slog.HandlerOptions{AddSource: false}))
+func server(connection net.Conn, parentChannel chan TCPStatus) {
+	initLog()
 
 	command := make([]byte, 1024)
 	for {
+		clear(command)
 		size, err := connection.Read(command)
 		if err != nil {
 			log.Error(fmt.Sprint("Failed to read data from connection ", err.Error()))
@@ -44,20 +42,32 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 			return
 		}
 		log.Info(fmt.Sprintf("Read %d bytes", size))
-		safeCmd := cleanupCommand(command)
 
-		handler := handlers[ValidHandlers(safeCmd)]
+		message := resp.ParseMessage(command[:size])
 
-		if handler == nil {
-			log.Error(fmt.Sprintf("Failed to match handler with cmd '%s' (%v)", safeCmd, []byte(safeCmd)))
+		log.Info(fmt.Sprintf("Got following message: %v", message))
+
+		if message.Kind == resp.SimpleString && isOperation(message.Content.(string)) {
+			log.Info("dispatching")
+			dispatchOperation(message, connection)
 			continue
 		}
-		handler(connection)
-		parentChannel <- TCPStatus{isError: false}
-		return
+
+		connection.Write([]byte(respOutput.BuildSimpleString("OK")))
 	}
 }
 
-func handlePing(connection net.Conn) {
-	connection.Write([]byte("+PONG\r\n"))
+func isOperation(s string) bool {
+	return slices.Contains([]domain.ValidHandlers{domain.Ping, domain.Echo}, domain.ValidHandlers(s))
+}
+
+func dispatchOperation(message resp.RespMessage, c net.Conn) {
+	domainOperation := domain.ValidHandlers(message.Content.(string))
+	domainHandler := domain.DomainHandlers[domainOperation]
+	if domainHandler == nil {
+		log.Error(fmt.Sprintf("Failed to match handler for operation %s", domainOperation))
+		c.Write([]byte(respOutput.BuildSimpleError("Matched operator, but failed to match handler")))
+		return
+	}
+	domain.DomainHandlers[domainOperation](c)
 }
