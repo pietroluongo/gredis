@@ -19,8 +19,3 @@ func init() {
 		BulkString:   bulkStringBuilder,
 	}
 }
-
-// func todoBuilder(data []byte) (*RespMessage, error) {
-// 	log.Info("TODO HANDLER NOT IMPLEMENTED")
-// 	return &RespMessage{Kind: SimpleString, Content: "OK"}, nil
-// }
