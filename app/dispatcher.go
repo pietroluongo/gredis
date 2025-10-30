@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net"
-	"slices"
 	"strings"
 
 	domain "github.com/codecrafters-io/redis-starter-go/internal/domain"
@@ -28,7 +27,7 @@ func dispatch(message resp.RespMessage, c net.Conn) {
 	}
 	log.Info("is not array")
 
-	if message.Kind == resp.SimpleString && isOperation(strings.ToLower(message.Content.(string))) {
+	if message.Kind == resp.SimpleString && domain.IsValidOp(strings.ToLower(message.Content.(string))) {
 		log.Info("is simple op")
 		dispatchSimpleOperation(message, c)
 		return
@@ -39,7 +38,8 @@ func dispatch(message resp.RespMessage, c net.Conn) {
 func checkIfArrayIsCommand(r resp.ArrayRespMessage) bool {
 	possibleCommandItem := r.Content[0]
 	log.Info(fmt.Sprintf("possible command item is %v", possibleCommandItem))
-	return slices.Contains([]RedisCommands{ping, echo}, RedisCommands(strings.ToLower(possibleCommandItem.Content.(string))))
+	requestedOp := strings.ToLower(possibleCommandItem.Content.(string))
+	return domain.IsValidOp(requestedOp)
 }
 
 func dispatchCommandWithArray(r resp.ArrayRespMessage, c net.Conn) {
@@ -57,17 +57,13 @@ func dispatchCommandWithArray(r resp.ArrayRespMessage, c net.Conn) {
 
 }
 
-func isOperation(s string) bool {
-	return slices.Contains([]domain.ValidHandlers{domain.Ping, domain.Echo}, domain.ValidHandlers(s))
-}
-
 func dispatchSimpleOperation(m resp.RespMessage, c net.Conn) {
-	domainOperation := domain.ValidHandlers(strings.ToLower(m.Content.(string)))
-	domainHandler := domain.DomainHandlers[domainOperation]
-	if domainHandler == nil {
-		log.Error(fmt.Sprintf("Failed to match handler for operation %s", domainOperation))
+	requestedOp := strings.ToLower(m.Content.(string))
+	domainHandler, err := domain.GetHandlerForRequestedOperation(requestedOp)
+	if err != nil {
+		log.Error(fmt.Sprintf("Failed to match handler for operation %s %s", requestedOp, err.Error()))
 		c.Write([]byte(respOutput.BuildSimpleError("Matched operator, but failed to match handler")))
 		return
 	}
-	domain.DomainHandlers[domainOperation](domain.Params{C: c})
+	domainHandler(domain.Params{C: c})
 }
