@@ -50,45 +50,5 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 		log.Info(fmt.Sprintf("Got following message: %v", message))
 
 		dispatch(message, connection)
-
-		// if message.Kind == resp.SimpleString && isOperation(message.Content.(string)) {
-		// 	log.Info("dispatching")
-		// 	dispatchOperation(message, connection)
-		// 	continue
-		// }
-
-		// if message.Kind == resp.Array {
-		// 	for _, m := range message.Content.([]resp.RespMessage) {
-		// 		log.Info(fmt.Sprintf("analyzing message %v", m))
-		// 		if m.Kind == resp.SimpleString || m.Kind == resp.BulkString && isOperation(m.Content.(string)) {
-		// 			dispatchOperation(message, connection)
-		// 			continue
-		// 		}
-		// 	}
-		// }
-
-		// connection.Write([]byte(respOutput.BuildSimpleString("OK")))
 	}
 }
-
-// func isOperation(s string) bool {
-// 	return slices.Contains([]domain.ValidHandlers{domain.Ping, domain.Echo}, domain.ValidHandlers(s))
-// }
-
-// func dispatchOperation(message resp.RespMessage, c net.Conn) {
-// 	var m resp.RespMessage
-// 	if message.Kind == resp.Array {
-// 		m = message.Content.([]resp.RespMessage)[0]
-// 	} else {
-// 		m = message
-// 	}
-
-// 	domainOperation := domain.ValidHandlers(m.Content.(string))
-// 	domainHandler := domain.DomainHandlers[domainOperation]
-// 	if domainHandler == nil {
-// 		log.Error(fmt.Sprintf("Failed to match handler for operation %s", domainOperation))
-// 		c.Write([]byte(respOutput.BuildSimpleError("Matched operator, but failed to match handler")))
-// 		return
-// 	}
-// 	domain.DomainHandlers[domainOperation](c)
-// }
