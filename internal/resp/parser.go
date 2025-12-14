@@ -1,10 +1,21 @@
 package resp
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type RespMessage struct {
 	Kind    ValidHeaders
 	Content any
+}
+
+func (r *RespMessage) IsArray() bool {
+	return r.Kind == Array
+}
+
+func (r *RespMessage) AsMessageArray() ArrayRespMessage {
+	return ArrayRespMessage{Kind: Array, Content: r.Content.([]RespMessage)}
+
 }
 
 func ParseMessage(rawData []byte) RespMessage {

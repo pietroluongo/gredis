@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 
-	resp "github.com/codecrafters-io/redis-starter-go/internal/resp"
+	respv2 "github.com/codecrafters-io/redis-starter-go/internal/resp_v2"
 )
 
 var log *slog.Logger
@@ -45,7 +45,7 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 		}
 		log.Info(fmt.Sprintf("Read %d bytes", size))
 
-		message := resp.ParseMessage(command[:size])
+		message := respv2.ParseMessage(command[:size])
 
 		log.Info(fmt.Sprintf("Got following message: %v", message))
 
