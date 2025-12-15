@@ -23,11 +23,11 @@ type Params struct {
 }
 
 var DomainHandlers = map[ValidHandlers]func(Params){
-	Ping:  PingHandler,
-	Echo:  EchoHandler,
+	Ping: PingHandler,
+	// Echo:  EchoHandler,
 	Debug: DebugHandler,
-	Get:   GetHandler,
-	Set:   SetHandler,
+	// Get:   GetHandler,
+	// Set: SetHandler,
 }
 
 func IsValidOp(op string) bool {
