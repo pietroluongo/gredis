@@ -38,6 +38,6 @@ func EchoHandlerV2(p EchoParams) error {
 	for _, r := range p.Args {
 		response = append(response, r.Data)
 	}
-	p.BaseParams.C.Write([]byte(output.BuildSimpleString(strings.Join(response, " "))))
+	p.BaseParams.C.Write([]byte(output.BuildBulkString(strings.Join(response, " "))))
 	return nil
 }
