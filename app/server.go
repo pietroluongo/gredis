@@ -3,31 +3,30 @@ package main
 import (
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
-	"os"
 
-	resp "github.com/codecrafters-io/redis-starter-go/internal/resp"
+	"github.com/codecrafters-io/redis-starter-go/internal/logger"
+	"github.com/codecrafters-io/redis-starter-go/internal/respv2"
 )
 
-var log *slog.Logger
+// var log *slog.Logger
 
-func initLog() {
-	file, err := os.OpenFile("./log.txt", os.O_RDWR|os.O_CREATE, 0644)
+// func initLog() {
+// 	file, err := os.OpenFile("./log.json", os.O_RDWR|os.O_CREATE, 0644)
 
-	var logOutput io.Writer
+// 	var logOutput io.Writer
 
-	if err != nil {
-		slog.Default().Warn(fmt.Sprintf("Failed to create log file, using only stdout %s", err.Error()))
-		logOutput = os.Stdout
-	} else {
-		logOutput = io.MultiWriter(os.Stdout, file)
-	}
-	log = slog.New(slog.NewTextHandler(logOutput, &slog.HandlerOptions{AddSource: false})).With(slog.Group("context", "package", "server"))
-}
+// 	if err != nil {
+// 		slog.Default().Warn(fmt.Sprintf("Failed to create log file, using only stdout %s", err.Error()))
+// 		logOutput = os.Stdout
+// 	} else {
+// 		logOutput = io.MultiWriter(os.Stdout, file)
+// 	}
+// 	log = slog.New(slog.NewJSONHandler(logOutput, &slog.HandlerOptions{AddSource: false})).With(slog.Group("context", "package", "server"))
+// }
 
 func server(connection net.Conn, parentChannel chan TCPStatus) {
-	initLog()
+	// initLog()
 
 	command := make([]byte, 1024)
 	for {
@@ -35,20 +34,20 @@ func server(connection net.Conn, parentChannel chan TCPStatus) {
 		size, err := connection.Read(command)
 		if err != nil {
 			if err == io.EOF {
-				log.Info(fmt.Sprintf("Client %s disconnected", connection.RemoteAddr()))
+				logger.Log.Info(fmt.Sprintf("Client %s disconnected", connection.RemoteAddr()))
 				parentChannel <- TCPStatus{isError: false}
 				return
 			}
-			log.Error(fmt.Sprint("Failed to read data from connection ", err.Error()))
+			logger.Log.Error(fmt.Sprint("Failed to read data from connection ", err.Error()))
 			parentChannel <- TCPStatus{isError: true}
 			return
 		}
-		log.Info(fmt.Sprintf("Read %d bytes", size))
+		logger.Log.Info(fmt.Sprintf("Read %d bytes", size))
 
-		message := resp.ParseMessage(command[:size])
+		message := respv2.ParseMessage(command[:size])
 
-		log.Info(fmt.Sprintf("Got following message: %v", message))
+		logger.Log.Info(fmt.Sprintf("Got following message: %v %T", message, message))
 
-		dispatch(message, connection)
+		dispatchV2(message.(respv2.CommandNode), connection)
 	}
 }

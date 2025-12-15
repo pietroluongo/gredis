@@ -10,7 +10,7 @@ import (
 var log *slog.Logger
 
 func init() {
-	file, err := os.OpenFile("./log.txt", os.O_RDWR|os.O_CREATE, 0644)
+	file, err := os.OpenFile("./log.json", os.O_RDWR|os.O_CREATE, 0644)
 	var logOutput io.Writer
 
 	if err != nil {
@@ -19,5 +19,5 @@ func init() {
 	} else {
 		logOutput = io.MultiWriter(os.Stdout, file)
 	}
-	log = slog.New(slog.NewTextHandler(logOutput, nil)).With(slog.Group("context", "package", "resp-parser"))
+	log = slog.New(slog.NewJSONHandler(logOutput, nil)).With(slog.Group("context", "package", "resp-parser"))
 }
